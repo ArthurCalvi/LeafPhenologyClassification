@@ -174,6 +174,7 @@ def solve_params(ATA, ATb):
 
 # Load the data and preprocess it
 def load_data_from_tile(path: str) -> dict:
+    tile_id = os.path.basename(path).split('_')[1]
     dates = [datetime.strptime(filename.split('_')[0], '%Y-%m-%d') for filename in os.listdir(os.path.join(path, 'rgb'))]
     dates.sort()
     rgb = load_folder(os.path.join(path, 'rgb'))
@@ -203,41 +204,88 @@ def load_data_from_tile(path: str) -> dict:
         'phase_rcc': phase_map_rcc.ravel(),
         'offset_rcc': offset_map_rcc.ravel(),
         'elevation': elevation.ravel(),
-        'aspect': aspect.ravel()
+        'aspect': aspect.ravel(),
+        'tile_id': np.array([tile_id] * aspect.size)  # Add tile_id to the features
     }
-
-    filtered_features = {k: v[forest_mask.ravel()] for k, v in features.items()}
-    filtered_weights = weights[forest_mask.ravel()]
 
     path_reference = os.path.join(path, 'reference_species')
     tif = [x for x in os.listdir(path_reference) if x.endswith('.tif')]
     reference = rasterio.open(os.path.join(path_reference, tif[0])).read()
     genus = reference[1]
     phen = reference[2]  # Assuming phenology data is stored in the third band
-    filtered_genus = genus[forest_mask]
-    filtered_phen = phen[forest_mask]
+    valid_mask = (forest_mask & (phen != 0)).astype(bool)
+
+    filtered_features = {k: v[valid_mask.ravel()] for k, v in features.items()}
+    filtered_weights = weights[valid_mask.ravel()]
+    filtered_genus = genus[valid_mask]
+    filtered_phen = phen[valid_mask]
 
     filtered_features['genus'] = filtered_genus
     filtered_features['phen'] = filtered_phen
 
-    return filtered_features, filtered_weights
+    df = pd.DataFrame(filtered_features)
+    df = df.dropna()
+
+    return df, filtered_weights[df.index]
 
 def load_data(directory: str) -> pd.DataFrame:
     all_data = []
     all_weights = []
+    tile_to_greco = {}
 
     for folder in tqdm(os.listdir(directory)):
         path = os.path.join(directory, folder)
         if folder.__contains__('.DS_Store') or folder.__contains__('.txt'):
             continue
         try:
-            tile_data, tile_weight = load_data_from_tile(path)
-            all_data.append(pd.DataFrame(tile_data))
+            tile_df, tile_weight = load_data_from_tile(path)
+            tile_id = os.path.basename(path).split('_')[1]
+            greco_region = "_".join(os.path.basename(path).split('_')[4:-1])
+            tile_to_greco[tile_id] = greco_region
+            tile_df['tile_id'] = tile_id
+            all_data.append(tile_df)
             all_weights.append(tile_weight)
         except Exception as e:
             print(f"Error processing {folder}: {e}")
             continue
 
-    print('Loaded {} tiles'.format(len(all_data)))
+    print(f"Loaded {len(all_data)} tiles")
+    data_df = pd.concat(all_data, ignore_index=True)
+    weights_array = np.concatenate(all_weights)
 
-    return pd.concat(all_data, ignore_index=True), np.concatenate(all_weights)
+    return data_df, weights_array, tile_to_greco
+
+#greco 
+mapping_real_greco = {'Côtes_et_plateaux_de_la_Manche': 'Centre Nord semi-océanique',
+                      'Côtes_et_plateaux_de_la_Manche': 'Centre Nord semi-océanique',
+                      'Ardenne_primaire': 'Grand Est semi-continental',
+                      'Préalpes_du_Nord': 'Alpes',
+                      'Préalpes_du_Nord': 'Alpes',
+                      'Garrigues' : 'Méditerranée',
+                      'Massif_vosgien_central': 'Vosges',
+                        'Premier_plateau_du_Jura': 'Jura',
+                        'Piémont_pyrénéen' : 'Pyrénées',
+                        'Terres_rouges': 'Sud-Ouest océanique' ,
+                          'Corse_occidentale': 'Corse',
+                        "Châtaigneraie_du_Centre_et_de_l'Ouest": 'Massif central' ,
+                        'Ouest-Bretagne_et_Nord-Cotentin': 'Grand Ouest cristallin et océanique', 
+                        'Total': 'Total'}
+
+
+# metrics
+from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix
+def compute_metrics(y_true: pd.Series, y_pred: pd.Series) -> dict:
+    """Compute accuracy, kappa, and confusion matrix components."""
+    accuracy = accuracy_score(y_true, y_pred)
+    kappa = cohen_kappa_score(y_true, y_pred)
+    scores = confusion_matrix(y_true, y_pred, labels=[1, 2]).ravel()
+    tn, fp, fn, tp = scores / np.sum(scores)
+
+    return {
+        'Accuracy': accuracy,
+        'Kappa': kappa,
+        'True Positives': tp,
+        'True Negatives': tn,
+        'False Positives': fp,
+        'False Negatives': fn
+    }
