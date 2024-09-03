@@ -1,0 +1,18 @@
+graph TD
+    A[QDA: Quadratic Discriminant Analysis] --> B[Assumption: Different covariance matrices for each class]
+    A --> C[Decision Boundary: Quadratic]
+    A --> D[Probability Density Function: Multivariate Gaussian]
+    
+    B --> E[Allows for more flexible decision boundaries]
+    C --> F[Can capture non-linear relationships]
+    D --> G[Uses mean vectors and covariance matrices]
+
+    H[QDA Process]
+    H --> I[1. Estimate parameters for each class]
+    H --> J[2. Calculate posterior probabilities]
+    H --> K[3. Assign to class with highest probability]
+
+    I --> L[Mean vectors]
+    I --> M[Covariance matrices]
+    J --> N[Use Bayes' theorem]
+    K --> O[Classification decision]

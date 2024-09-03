@@ -1,3 +1,7 @@
 *.csv
 *.png
 *.pkl
+checkpoints/
+results/
+data/
+models/

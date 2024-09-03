@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Axes -->
+  <line x1="50" y1="350" x2="350" y2="350" stroke="black" />
+  <line x1="50" y1="350" x2="50" y2="50" stroke="black" />
+  
+  <!-- Axis labels -->
+  <text x="200" y="390" text-anchor="middle">Amplitude</text>
+  <text x="10" y="200" text-anchor="middle" transform="rotate(-90 10 200)">Phase</text>
+  
+  <!-- Data points -->
+  <circle cx="100" cy="300" r="5" fill="green" />
+  <circle cx="120" cy="280" r="5" fill="green" />
+  <circle cx="140" cy="310" r="5" fill="green" />
+  <circle cx="90" cy="320" r="5" fill="green" />
+  <circle cx="110" cy="290" r="5" fill="green" />
+  
+  <circle cx="250" cy="150" r="5" fill="orange" />
+  <circle cx="270" cy="130" r="5" fill="orange" />
+  <circle cx="230" cy="170" r="5" fill="orange" />
+  <circle cx="260" cy="140" r="5" fill="orange" />
+  <circle cx="240" cy="160" r="5" fill="orange" />
+  
+  <!-- Quadratic decision boundary -->
+  <path d="M50 200 Q 200 350 350 150" fill="none" stroke="blue" stroke-dasharray="5,5" />
+  
+  <!-- Legend -->
+  <circle cx="300" cy="50" r="5" fill="green" />
+  <text x="310" y="55" font-size="12">Evergreen</text>
+  <circle cx="300" cy="70" r="5" fill="orange" />
+  <text x="310" y="75" font-size="12">Deciduous</text>
+  <line x1="290" y1="90" x2="310" y2="90" stroke="blue" stroke-dasharray="5,5" />
+  <text x="315" y="95" font-size="12">QDA Boundary</text>
+</svg>
